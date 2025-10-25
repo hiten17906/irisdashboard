@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IRIS Dashboard - Final Pixel Perfect with Link</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'iris-bg-dark': '#121217',
+                        'iris-sidebar': '#1C1C23',
+                        'iris-accent': '#7C3AED',
+                        'iris-text-light': '#E0E0E0',
+                        'iris-text-muted': '#A0A0A0',
+                        'iris-active-link': '#282830',
+                        'iris-red': '#DC2626',
+                        'iris-calendar-today': '#4A4A52',
+                        'iris-nav-bg': '#1C1C23', 
+                    },
+                    boxShadow: {
+                        'iris-dark': '0 8px 15px 0 rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
+                        'iris-reflection': 'inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Roboto', 'Arial', 'sans-serif'],
+                    }
+                },
+            },
+        }
+    </script>
+
+    <style>
+        body {
+            background: linear-gradient(180deg, #121217 0%, #0c0c10 100%); 
+            font-family: 'Inter', sans-serif;
+            color: #E0E0E0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .glass-card {
+            background: rgba(28, 28, 35, 0.7);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background-image: linear-gradient(135deg, rgba(36, 36, 46, 0.7) 0%, rgba(26, 26, 32, 0.7) 100%);
+        }
+
+        .glass-sidebar {
+            background: rgba(28, 28, 35, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .titlebar-gradient {
+            background: linear-gradient(to bottom, #1C1C23, #1C1C23 80%, rgba(28, 28, 35, 0));
+        }
+        
+        #root {
+            height: 100%;
+            display: flex;
+            flex-direction: column; 
+        }
+
+        /* Custom style for calendar day cells */
+        .calendar-cell {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // UPDATED: Added 'url' property to the 'Apply for Minors' object
+        const sidebarLinks = {
+            frequentlyVisited: [
+                { text: 'Hostel Dashboard', active: true, url: null },
+                { 
+                    text: 'Apply for Minors', 
+                    active: false, 
+                    url: 'https://iris.nitk.ac.in/academic/program/applications/minors_student_dashboard' // <-- THE NEW HYPERLINK
+                },
+                { text: 'Eligible hostlers', active: false, url: null },
+                { text: 'Time Table and Activites', active: false, url: null },
+                { text: 'see more...', active: false, url: null },
+            ],
+            quickLinks: [
+                'About IRIS',
+                'IRIS Blog',
+                'NITK Website',
+                'Terms of Service',
+                'Login to Moodle',
+            ],
+            helpSettings: [
+                'Tell IRIS',
+                'officers@iris.nitk.ac.in',
+                'Change password',
+            ]
+        };
+
+        const calendarGrid = [
+            [30, 1, 2, 3, 4, 5],
+            [6, 7, 8, 9, 10, 11, 12],
+            [13, 14, 15, 16, 17, 18, 19],
+            [20, 21, 22, 23, 24, 25, 26], 
+            [27, 28, 29, 30, 31, 1, 2],
+            [3, 4, 5, 6, 7, 8, 9] 
+        ];
+
+        const profileImageURL = "https://i.imgur.com/Kz8pX3s.png"; 
+
+        const NavLink = ({ text, active = false }) => (
+            <div className={`flex items-center space-x-1 cursor-pointer py-2 px-3 ${active ? 'text-white font-semibold' : 'text-iris-text-muted hover:text-white'} transition-colors`}>
+                <span>{text}</span>
+                <span className="text-xs">▾</span>
+            </div>
+        );
+
+        // MODIFIED: SidebarLink now accepts 'url' and conditionally renders an <a> tag
+        const SidebarLink = ({ text, active = false, url = null }) => {
+            const classes = `py-2 px-3 rounded-xl cursor-pointer text-sm font-medium transition-colors ${
+                active
+                    ? 'bg-iris-active-link text-white shadow-md'
+                    : 'text-iris-text-light hover:bg-iris-active-link/50'
+            }`;
+
+            if (url) {
+                // Renders <a> tag with hyperlink if URL exists
+                return (
+                    <a href={url} target="_blank" rel="noopener noreferrer" className={classes}>
+                        {text}
+                    </a>
+                );
+            }
+
+            // Renders <div> otherwise
+            return (
+                <div className={classes}>
+                    {text}
+                </div>
+            );
+        };
+
+        const SidebarSection = ({ title, links }) => (
+            <div className="mb-6">
+                <h3 className="uppercase text-xs text-iris-text-muted mb-3 tracking-wider">{title}</h3>
+                <div className="space-y-1">
+                    {links.map((link, index) => {
+                        // Handle links that are just strings vs. objects
+                        const linkData = typeof link === 'string' ? { text: link, active: false, url: null } : link;
+                        return (
+                            <SidebarLink 
+                                key={index} 
+                                text={linkData.text} 
+                                active={linkData.active} 
+                                url={linkData.url}
+                            />
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const cardClasses = "rounded-xl glass-card shadow-iris-dark shadow-iris-reflection";
+
+            return (
+                <div className="flex flex-col h-full w-full">
+                    {/* 0. Top Navigation Bar */}
+                    <header className="flex justify-between items-center h-16 bg-iris-nav-bg px-6 border-b border-white/5 titlebar-gradient">
+                        <div className="flex items-center space-x-6 text-sm">
+                            {/* IRIS logo is white */}
+                            <span className="text-2xl font-bold text-white mr-4">IRIS</span> 
+                            <NavLink text="Institute" />
+                            <NavLink text="Campus" />
+                            <NavLink text="Academics" />
+                            <NavLink text="Alumni" />
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search here..."
+                                    className="bg-black/30 text-white placeholder-iris-text-muted/70 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-iris-accent w-64 text-sm"
+                                />
+                                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-iris-text-muted">
+                                    🔍
+                                </span>
+                            </div>
+                            {/* CSD logo/icon */}
+                            <div className="w-10 h-10 bg-iris-accent/70 rounded-full flex items-center justify-center font-extrabold text-white text-lg border-2 border-white/10 cursor-pointer">
+                                CSD
+                            </div>
+                            <span className="text-sm text-iris-text-muted">Terms of Service</span>
+                        </div>
+                    </header>
+
+                    {/* Main Content Area (Sidebar + Dashboard) */}
+                    <div className="flex flex-1 overflow-hidden">
+                        {/* A. Left Sidebar (Fixed) */}
+                        <aside className="w-64 p-6 flex flex-col justify-between overflow-y-auto shrink-0 glass-sidebar">
+                            <div className="flex-grow">
+                                <SidebarSection title="Frequently Visited" links={sidebarLinks.frequentlyVisited} />
+                                <SidebarSection title="Quick Links" links={sidebarLinks.quickLinks} />
+                                <SidebarSection title="Help & Settings" links={sidebarLinks.helpSettings} />
+                            </div>
+
+                            <div className="mt-8">
+                                <button className="flex items-center justify-center w-full py-2 bg-gradient-to-r from-[#FF4E50] to-iris-red text-white font-semibold rounded-xl shadow-xl hover:opacity-90 transition-opacity shadow-iris-reflection">
+                                    Logout &rarr;
+                                </button>
+                            </div>
+                        </aside>
+
+                        {/* B. Main Dashboard Content */}
+                        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {/* Dashboard Title & Breadcrumb */}
+                            <header className="flex items-center justify-between pb-4">
+                                <h1 className="text-2xl font-bold text-white">Dashboard | IRIS</h1>
+                                <div className="text-lg text-iris-text-light">
+                                    <span className="text-iris-text-muted/70">Home / </span>
+                                    <span className="font-semibold">User Dashboard</span>
+                                </div>
+                            </header>
+
+                            {/* Key Metrics Section */}
+                            <div className="grid grid-cols-3 gap-6">
+                                <div className={`${cardClasses} p-6`}>
+                                    <div className="text-5xl font-extrabold text-white">44</div>
+                                    <div className="text-lg text-iris-text-muted mt-2">Major Credits</div>
+                                </div>
+                                <div className={`${cardClasses} p-6`}>
+                                    <div className="text-5xl font-extrabold text-white">8.25</div>
+                                    <div className="text-lg text-iris-text-muted mt-2">Major CGPA</div>
+                                </div>
+                                <div className={`${cardClasses} p-6`}>
+                                    <div className="text-5xl font-extrabold text-white">3rd</div>
+                                    <div className="text-lg text-iris-text-muted mt-2">Semester</div>
+                                </div>
+                            </div>
+
+                            {/* Announcements, Tabs & User Details */}
+                            <div className="grid grid-cols-3 gap-6">
+                                {/* Card Left: Announcements & Tabs */}
+                                <div className={`col-span-2 ${cardClasses} p-6`}>
+                                    <div className="flex border-b border-white/5 mb-4">
+                                        <button className="pb-2 px-3 mr-4 text-iris-accent font-semibold border-b-2 border-iris-accent bg-iris-accent/10 rounded-t-lg transition-colors">
+                                            Announcements
+                                        </button>
+                                        <button className="pb-2 px-3 mr-4 text-iris-text-muted hover:text-white transition-colors">
+                                            Attendance
+                                        </button>
+                                        <button className="pb-2 px-3 text-iris-text-muted hover:text-white transition-colors">
+                                            Courses
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4 pt-2">
+                                        <div className="text-iris-text-light font-medium hover:text-iris-accent cursor-pointer transition-colors">Kind attention: Mega Mess members</div>
+                                        <div className="text-iris-text-light font-medium hover:text-iris-accent cursor-pointer transition-colors">Safe, Secure and Serene Campus Policy</div>
+                                        <div className="text-iris-text-light font-medium hover:text-iris-accent cursor-pointer transition-colors">Mess Change form</div>
+                                    </div>
+                                </div>
+
+                                {/* Card Right: User Details */}
+                                <div className={`col-span-1 ${cardClasses} p-6`}>
+                                    <h3 className="text-sm text-iris-text-muted mb-4">College ID</h3>
+                                    <div className="flex items-start space-x-4">
+                                        <img
+                                            src={profileImageURL}
+                                            alt="Jacob E."
+                                            className="w-16 h-16 rounded-full object-cover border-2 border-iris-accent/50 shadow-lg"
+                                        />
+                                        <div className="flex-1">
+                                            <p className="text-lg font-semibold text-white">Jacob E</p>
+                                            <p className="text-xs text-iris-text-muted mt-1">B.Tech Student</p>
+                                            <p className="text-xs text-iris-text-muted">@NITK Surathkal</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 border-t border-white/10 pt-4 space-y-2 text-sm">
+                                        <p className="text-iris-text-muted">Course: <span className="text-white font-medium">B.Tech in Electronics and Communication Engineering</span></p>
+                                        <p className="text-iris-text-muted">Branch: <span className="text-white font-medium">Electronics and Communication Engineering</span></p>
+                                        <p className="text-iris-text-muted">Reg No: <span className="text-white font-medium">24510689</span></p>
+                                        <button className="text-iris-accent font-semibold text-sm hover:underline mt-2">Details</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Calendar & Events Card (Final Styling) */}
+                            <div className="grid grid-cols-3 gap-6">
+                                <div className={`col-span-2 ${cardClasses} p-6`}>
+                                    {/* Header with Add Button */}
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-white">Academic & Club Event Calender</h3>
+                                        <button className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-iris-accent to-[#9A50F5] text-white rounded-full shadow-lg hover:opacity-90 transition-opacity text-xl font-bold">
+                                            +
+                                        </button>
+                                    </div>
+
+                                    {/* Today's Event Box */}
+                                    <div className="bg-black/20 p-3 rounded-xl mb-6 shadow-iris-reflection">
+                                        <p className="text-iris-text-light font-medium">| Today's Event</p>
+                                    </div>
+
+                                    {/* Calendar Grid */}
+                                    <div className="mt-4">
+                                        {/* Month Header - Aligned and spaced correctly */}
+                                        <div className="flex justify-between items-center text-sm mb-3">
+                                            <span className="text-lg font-semibold text-white">October</span> 
+                                            <div className="text-iris-text-muted flex space-x-4">
+                                                <span className="font-semibold w-8 text-center">Mo</span>
+                                                <span className="font-semibold w-8 text-center">Tu</span>
+                                                <span className="font-semibold w-8 text-center">We</span>
+                                                <span className="font-semibold w-8 text-center">Th</span>
+                                                <span className="font-semibold w-8 text-center">Fr</span>
+                                                <span className="font-semibold w-8 text-center">Sa</span>
+                                                <span className="font-semibold w-8 text-center">Su</span>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Calendar Days Grid */}
+                                        <div className="grid grid-cols-7 gap-1 text-sm">
+                                            {calendarGrid.flat().map((date, index) => {
+                                                const isCurrentMonth = index > 0 && index <= 31 + 5 && date < 13; 
+                                                const isToday = isCurrentMonth && date === 25;
+                                                const isGrayedOut = !isCurrentMonth || (index < 5 && date > 12); 
+
+                                                let cellClasses = 'calendar-cell font-medium';
+                                                
+                                                if (isToday) {
+                                                    cellClasses += ' bg-iris-calendar-today text-white border-2 border-iris-accent shadow-md'; 
+                                                } else if (isGrayedOut) {
+                                                    cellClasses += ' text-iris-text-muted opacity-50'; 
+                                                } else {
+                                                    cellClasses += ' text-iris-text-light hover:bg-white/5 transition-colors'; 
+                                                }
+
+                                                return (
+                                                    <div key={index} className="text-center">
+                                                        <div className={cellClasses}>
+                                                            {date}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-span-1">
+                                    {/* Empty space next to the calendar */}
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                </div>
+            );
+        };
+
+        // Render the React component
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
